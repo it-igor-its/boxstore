@@ -5,10 +5,9 @@ use yii\helpers\Html;
 /** @var yii\web\View $this */
 /** @var common\models\Note $model */
 
-$this->title = 'Update Note: ' . $model->title;
-$this->params['breadcrumbs'][] = ['label' => 'Notes', 'url' => ['index']];
-$this->params['breadcrumbs'][] = ['label' => $model->title, 'url' => ['view', 'id' => $model->id]];
-$this->params['breadcrumbs'][] = 'Update';
+$this->title = 'Редактирование заметки: ' . $model->title;
+$this->params['breadcrumbs'][] = ['label' => 'Заметки', 'url' => ['index']];
+$this->params['breadcrumbs'][] = 'Редактирование';
 ?>
 <div class="note-update">
 

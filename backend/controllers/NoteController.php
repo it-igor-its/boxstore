@@ -4,11 +4,14 @@ namespace backend\controllers;
 
 use common\models\Note;
 use common\models\search\NoteSearch;
+use common\components\Settings;
 use Yii;
 use yii\db\Exception;
+use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\web\Response;
 
 /**
  * NoteController implements the CRUD actions for Note model.
@@ -23,10 +26,14 @@ class NoteController extends Controller
         return array_merge(
             parent::behaviors(),
             [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
+                'access' => [
+                    'class' => AccessControl::class,
+                    'only' => ['index', 'view', 'create', 'update', 'delete', 'toggle-pin'],
+                    'rules' => [
+                        [
+                            'allow' => true,
+                            'roles' => ['@'],
+                        ],
                     ],
                 ],
             ]
@@ -51,35 +58,42 @@ class NoteController extends Controller
     }
 
     /**
-     * Displays a single Note model.
-     * @param int $id ID
-     * @return string
-     * @throws NotFoundHttpException if the model cannot be found
+     * @return string|Response
      */
-    public function actionView($id)
+    public function actionCreate(): Response|string
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
+        $model = new Note();
+
+        return $this->render('create', [
+            'model' => $model,
         ]);
     }
 
-    /**
-     * Creates a new Note model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
-    public function actionCreate()
+    public function actionStore(): Response
     {
         $model = new Note();
 
         if ($this->request->isPost) {
             $model->user_id = Yii::$app->user->id;
             if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
+                Yii::$app->session->setFlash('success', 'Заметка успешно создана!');
+            } else {
+                Yii::$app->session->setFlash('error', Settings::errorText($model->errors));
             }
         }
 
-        return $this->render('create', [
+        return $this->redirect(['index']);
+    }
+
+    public function actionEdit($id): Response|string
+    {
+        $model = Note::findOne($id);
+
+        if ($model->user_id != Yii::$app->user->id) {
+            return $this->redirect(['index']);
+        }
+
+        return $this->render('update', [
             'model' => $model,
         ]);
     }
@@ -88,7 +102,7 @@ class NoteController extends Controller
      * Updates an existing Note model.
      * If update is successful, the browser will be redirected to the 'view' page.
      * @param int $id ID
-     * @return string|\yii\web\Response
+     * @return string|Response
      * @throws NotFoundHttpException if the model cannot be found
      * @throws Exception
      */
@@ -102,23 +116,23 @@ class NoteController extends Controller
             && $model->load($this->request->post())
             && $model->save()
         ) {
-            return $this->redirect(['view', 'id' => $model->id]);
+            Yii::$app->session->setFlash('success', 'Заметка успешно создана!');
+        } else {
+            Yii::$app->session->setFlash('error', Settings::errorText($model->errors));
         }
 
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
+        return $this->redirect(['index']);
     }
 
     /**
      * Deletes an existing Note model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param int $id ID
-     * @return \yii\web\Response
+     * @return Response
      * @throws NotFoundHttpException if the model cannot be found
      */
-    public function actionDelete($id)
+    public function actionDestroy(int $id)
     {
         $model = $this->findModel($id);
         if ($model->user_id == Yii::$app->user->id) {
@@ -146,5 +160,29 @@ class NoteController extends Controller
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    public function actionTogglePin($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $model = Note::find()
+            ->where([
+                'id' => $id,
+                'user_id' => Yii::$app->user->id
+            ])
+            ->one();
+
+        if (!$model) {
+            return ['success' => false];
+        }
+
+        $model->is_pinned = !$model->is_pinned;
+        $model->save(false);
+
+        return [
+            'success' => true,
+            'pinned' => $model->is_pinned
+        ];
     }
 }

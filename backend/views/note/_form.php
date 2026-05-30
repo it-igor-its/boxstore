@@ -12,7 +12,16 @@ $color = $model->color ?? '#6366f1';
 
 <div class="note-form">
 
-    <?php $form = ActiveForm::begin(); ?>
+    <?php $form = ActiveForm::begin([
+        'action' => $model->isNewRecord ? ['store', 'id' => $model->id] : ['update', 'id' => $model->id],
+        'id' => 'card-form',
+        'options' => ['class' => 'form-horizontal col-sm-10', 'style' => 'margin-top: 20px;'],
+        'fieldConfig' => [
+            'template' => '{label}<div class="col-sm-6">{input}{error}</div>',
+            'labelOptions' => ['class' => 'col-sm-2 control-label'],
+            'inputOptions' => ['class' => 'form-control input-sm'],
+        ],
+    ]); ?>
 
     <?= $form->field($model, 'title')->textInput(['maxlength' => true]) ?>
 
@@ -46,9 +55,14 @@ $color = $model->color ?? '#6366f1';
 
 	</div>
 
-    <div class="form-group">
-        <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
-        <?= Html::a('Отменить', ['index'], ['class' => 'btn btn-danger']) ?>
+    <div class="form-group" style="gap: 10px; display: flex;">
+	    <?php
+	    echo Html::submitButton('Сохранить', ['class' => 'btn btn-success']);
+		echo Html::a('Отменить', ['index'], ['class' => 'btn btn-info']);
+	    if (!$model->isNewRecord) {
+            echo Html::a('Удалить', ['destroy', 'id' => $model->id], ['class' => 'btn btn-danger']);
+	    }
+	    ?>
     </div>
 
     <?php ActiveForm::end(); ?>

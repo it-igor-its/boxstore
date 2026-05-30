@@ -11,6 +11,7 @@ use common\models\Note;
  */
 class NoteSearch extends Note
 {
+    public $q;
     /**
      * {@inheritdoc}
      */
@@ -18,7 +19,7 @@ class NoteSearch extends Note
     {
         return [
             [['id', 'user_id', 'is_pinned'], 'integer'],
-            [['title', 'content', 'color', 'created_at', 'updated_at'], 'safe'],
+            [['title', 'content', 'color', 'created_at', 'updated_at', 'q'], 'safe'],
         ];
     }
 
@@ -47,6 +48,12 @@ class NoteSearch extends Note
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+            'sort' => [
+                'defaultOrder' => ['is_pinned' => SORT_DESC, 'created_at' => SORT_DESC],
+            ],
         ]);
 
         $this->load($params, $formName);
@@ -57,18 +64,13 @@ class NoteSearch extends Note
             return $dataProvider;
         }
 
-        // grid filtering conditions
-        $query->andFilterWhere([
-            'id' => $this->id,
-            'user_id' => $this->user_id,
-            'is_pinned' => $this->is_pinned,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-        ]);
-
-        $query->andFilterWhere(['like', 'title', $this->title])
-            ->andFilterWhere(['like', 'content', $this->content])
-            ->andFilterWhere(['like', 'color', $this->color]);
+        if ($this->q) {
+            $query->andFilterWhere([
+                'or',
+                ['like', 'title', $this->q],
+                ['like', 'content', $this->q],
+            ]);
+        }
 
         return $dataProvider;
     }
